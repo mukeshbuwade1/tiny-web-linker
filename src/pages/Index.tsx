@@ -3,7 +3,6 @@ import Header from "@/components/Header";
 import UrlShortener from "@/components/UrlShortener";
 import Stats from "@/components/Stats";
 import Footer from "@/components/Footer";
-import { BookOpen, ArrowRight } from "lucide-react";
 
 const Index = () => {
   return (
@@ -55,25 +54,6 @@ const Index = () => {
                   <p className="text-muted-foreground text-sm">
                     Copy and share your shortened URL anywhere
                   </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-secondary p-8 rounded-lg mt-16 text-left">
-              <div className="flex items-start gap-4">
-                <BookOpen className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Ready to connect to Supabase?</h3>
-                  <p className="text-muted-foreground mb-4">
-                    To make this URL shortener fully functional, you need to connect to Supabase
-                    for database storage and edge functions.
-                  </p>
-                  <div className="flex items-center gap-1 text-primary">
-                    <span className="text-sm font-medium">
-                      Click the Supabase button at the top right
-                    </span>
-                    <ArrowRight className="h-4 w-4" />
-                  </div>
                 </div>
               </div>
             </div>
