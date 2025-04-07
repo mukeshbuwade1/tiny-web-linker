@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Copy, Link2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const UrlShortener = () => {
   const [url, setUrl] = useState("");
@@ -36,24 +37,23 @@ const UrlShortener = () => {
 
     setIsLoading(true);
     try {
-      // This would call your Supabase Edge Function once it's set up
-      const response = await fetch("/api/shorten-url", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ url }),
+      // Call the Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke("short-url-generator", {
+        body: { url },
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to shorten URL");
+      if (error) {
+        throw new Error(error.message || "Failed to shorten URL");
       }
 
-      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
       setShortUrl(data.shortUrl);
     } catch (error) {
       console.error("Error shortening URL:", error);
-      setErrorMessage("Error shortening URL. Please try again.");
+      setErrorMessage(error instanceof Error ? error.message : "Error shortening URL. Please try again.");
       toast.error("Failed to shorten URL. Please try again.");
     } finally {
       setIsLoading(false);

@@ -1,1 +1,5 @@
+
 project_id = "canfxcahoyelwlahexrf"
+
+[functions.short-url-generator]
+verify_jwt = false

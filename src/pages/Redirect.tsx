@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Redirect = () => {
   const { shortCode } = useParams<{ shortCode: string }>();
@@ -10,18 +11,33 @@ const Redirect = () => {
   useEffect(() => {
     const fetchOriginalUrl = async () => {
       try {
-        // This would call your Supabase Edge Function once it's set up
-        const response = await fetch(`/api/redirect/${shortCode}`);
+        if (!shortCode) {
+          throw new Error("Short code is required");
+        }
         
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error("Short link not found");
-          }
+        // Query the database for the original URL
+        const { data, error } = await supabase
+          .from('short_urls')
+          .select('original_url')
+          .eq('short_code', shortCode)
+          .maybeSingle();
+        
+        if (error) {
           throw new Error("Failed to fetch original URL");
         }
         
-        const data = await response.json();
-        window.location.href = data.originalUrl;
+        if (!data) {
+          throw new Error("Short link not found");
+        }
+        
+        // Update click count
+        await supabase
+          .from('short_urls')
+          .update({ clicks: supabase.rpc('increment_clicks', { row_id: shortCode }) })
+          .eq('short_code', shortCode);
+        
+        // Redirect to the original URL
+        window.location.href = data.original_url;
       } catch (error) {
         console.error("Error redirecting:", error);
         setError(error instanceof Error ? error.message : "An unknown error occurred");
