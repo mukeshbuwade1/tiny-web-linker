@@ -38,14 +38,14 @@ const UrlShortener = () => {
     setIsLoading(true);
     try {
       // Add https:// if missing
-      let processedUrl = url;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        processedUrl = 'https://' + url;
-      }
+      // let processedUrl = url;
+      // if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      //   processedUrl = 'https://' + url;
+      // }
 
       // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("short-url-generator", {
-        body: { url: processedUrl },
+        body: { url },
       });
 
       if (error) {
