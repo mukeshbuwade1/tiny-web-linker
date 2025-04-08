@@ -37,6 +37,12 @@ const UrlShortener = () => {
 
     setIsLoading(true);
     try {
+      // Add https:// if missing
+      // let processedUrl = url;
+      // if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      //   processedUrl = 'https://' + url;
+      // }
+
       // Call the Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("short-url-generator", {
         body: { url },
@@ -51,6 +57,7 @@ const UrlShortener = () => {
       }
 
       setShortUrl(data.shortUrl);
+      toast.success("URL shortened successfully!");
     } catch (error) {
       console.error("Error shortening URL:", error);
       setErrorMessage(error instanceof Error ? error.message : "Error shortening URL. Please try again.");
@@ -79,6 +86,7 @@ const UrlShortener = () => {
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               className="flex-grow"
+              onKeyDown={(e) => e.key === "Enter" && shortenUrl()}
             />
             <Button onClick={shortenUrl} disabled={isLoading}>
               {isLoading ? "Shortening..." : "Shorten"}
@@ -97,7 +105,7 @@ const UrlShortener = () => {
                   <p className="text-sm text-muted-foreground">Your shortened URL:</p>
                   <p className="font-medium truncate text-primary">{shortUrl}</p>
                 </div>
-                <Button size="icon" variant="outline" onClick={copyToClipboard}>
+                <Button size="icon" variant="outline" onClick={copyToClipboard} aria-label="Copy to clipboard">
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>

@@ -18,7 +18,7 @@ const Redirect = () => {
         // Query the database for the original URL
         const { data, error } = await supabase
           .from('short_urls')
-          .select('original_url')
+          .select('original_url, id, clicks')
           .eq('short_code', shortCode)
           .maybeSingle();
         
@@ -30,11 +30,12 @@ const Redirect = () => {
           throw new Error("Short link not found");
         }
         
-        // Update click count
+        // Update click count by incrementing the current value
+        const currentClicks = data.clicks || 0;
         await supabase
           .from('short_urls')
-          .update({ clicks: supabase.rpc('increment_clicks', { row_id: shortCode }) })
-          .eq('short_code', shortCode);
+          .update({ clicks: currentClicks + 1 })
+          .eq('id', data.id);
         
         // Redirect to the original URL
         window.location.href = data.original_url;
