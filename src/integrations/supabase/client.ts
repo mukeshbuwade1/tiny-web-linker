@@ -7,7 +7,7 @@ import type { Database } from './types';
 // import { supabase } from "@/integrations/supabase/client";
 
 // Define fallbacks in case env vars are not available
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://canfxcahoyelwlahexrf.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhbmZ4Y2Fob3llbHdsYWhleHJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5Mjg2NDgsImV4cCI6MjA1OTUwNDY0OH0.5ui_bcMYWJlEDx8wtbxL8EApEoj7C3Ig3mJkkxWxx4s';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL 
+const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY 
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
