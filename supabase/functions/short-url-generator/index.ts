@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     }
 
     // Construct the short URL (using request URL for base)
-    const baseUrl = new URL(req.url).origin.replace('/short-url-generator', '');
+    const baseUrl = `urlzip.in`
     const shortUrl = `${baseUrl}/${shortCode}`;
 
     // Return the short URL
