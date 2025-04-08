@@ -43,7 +43,7 @@ const ContactUs: React.FC = () => {
                     <Mail className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <h3 className="font-medium">Email</h3>
-                      <p className="text-gray-600">support@urlzip.in</p>
+                      <p className="text-gray-600">con_urlzip@gmail.com</p>
                     </div>
                   </div>
                   
@@ -51,21 +51,21 @@ const ContactUs: React.FC = () => {
                     <Phone className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <h3 className="font-medium">Phone</h3>
-                      <p className="text-gray-600">+1 (555) 123-4567</p>
+                      <p className="text-gray-600">+91 9770675479</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-3">
+                  {/* <div className="flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-primary mt-1" />
                     <div>
                       <h3 className="font-medium">Address</h3>
                       <p className="text-gray-600">
-                        123 Tech Street<br />
-                        San Francisco, CA 94107<br />
-                        United States
+                        Street<br />
+                        Mumbai <br />
+                        India
                       </p>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
               

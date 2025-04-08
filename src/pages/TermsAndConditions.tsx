@@ -63,7 +63,7 @@ const TermsAndConditions: React.FC = () => {
           </p>
 
           <h2 className="text-xl font-semibold mb-2">6. Contact</h2>
-          <p>If you have questions, contact us at <a href="mailto:support@urlzip.in" className="text-primary underline">support@urlzip.in</a>.</p>
+          <p>If you have questions, contact us at <a href="mailto:con_urlzip@gmail.com" className="text-primary underline">con_urlzip@gmail.com</a>.</p>
         </main>
       </div>
       <Footer />
