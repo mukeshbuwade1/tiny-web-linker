@@ -1,4 +1,6 @@
+
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 export default function Footer() {
   return (
@@ -27,8 +29,8 @@ export default function Footer() {
           <div>
             <h3 className="font-medium mb-3">Company</h3>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><a href="#" className="hover:text-primary">About</a></li>
-              <li><a href="#" className="hover:text-primary">Contact</a></li>
+              <li><Link to="/about-us" className="hover:text-primary">About</Link></li>
+              <li><Link to="/contact-us" className="hover:text-primary">Contact</Link></li>
               {/* <li><a href="#" className="hover:text-primary">Blog</a></li> */}
             </ul>
           </div>
@@ -36,8 +38,8 @@ export default function Footer() {
           <div>
             <h3 className="font-medium mb-3">Legal</h3>
             <ul className="space-y-2 text-sm text-gray-500">
-              <li><a href="#" className="hover:text-primary">Terms</a></li>
-              <li><a href="#" className="hover:text-primary">Privacy</a></li>
+              <li><Link to="/terms-and-conditions" className="hover:text-primary">Terms</Link></li>
+              <li><Link to="/privacy-policy" className="hover:text-primary">Privacy</Link></li>
               {/* <li><a href="#" className="hover:text-primary">Cookies</a></li> */}
             </ul>
           </div>
@@ -46,7 +48,7 @@ export default function Footer() {
       
       <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
         <p className="text-sm text-gray-500">
-          &copy; {new Date().getFullYear()} GhibliFy | All rights reserved
+          &copy; {new Date().getFullYear()} URL Zip | All rights reserved
         </p>
         <div className="flex gap-4 mt-4 md:mt-0">
           <a href="#" className="text-gray-400 hover:text-primary">
