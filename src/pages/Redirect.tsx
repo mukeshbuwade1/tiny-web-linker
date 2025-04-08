@@ -30,10 +30,10 @@ const Redirect = () => {
           throw new Error("Short link not found");
         }
         
-        // Update click count using direct update with a numeric value
+        // Update click count
         await supabase
           .from('short_urls')
-          .update({ clicks: 1 }) // We'll increment by 1 for now
+          .update({ clicks: supabase.rpc('increment', { row_id: data.id, increment_by: 1 }) })
           .eq('short_code', shortCode);
         
         // Redirect to the original URL
