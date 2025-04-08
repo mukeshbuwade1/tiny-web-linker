@@ -1,5 +1,8 @@
+
 import Meta from '@/components/Meta';
 import React from 'react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 const PrivacyPolicy: React.FC = () => {
   return (
@@ -10,10 +13,10 @@ const PrivacyPolicy: React.FC = () => {
         url="https://urlzip.in/privacy-policy"
       />
       <div className="container mx-auto px-4 flex-1">
-        <header className="py-6">
-          <h1 className="text-3xl font-bold text-center">Privacy Policy</h1>
-        </header>
+        <Header />
         <main className="py-12 text-gray-800 max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
+          
           <p className="mb-4">
             We value your privacy. This privacy policy outlines how we handle your information.
           </p>
@@ -34,9 +37,10 @@ const PrivacyPolicy: React.FC = () => {
           </p>
 
           <h2 className="text-xl font-semibold mb-2">4. Contact Us</h2>
-          <p>If you have any questions, contact us at <span className="text-blue-600 underline">your-email@example.com</span>.</p>
+          <p>If you have any questions, contact us at <a href="mailto:support@urlzip.in" className="text-primary underline">support@urlzip.in</a>.</p>
         </main>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -1,19 +1,22 @@
+
 import Meta from '@/components/Meta';
 import React from 'react';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 const TermsAndConditions: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
-        <Meta
+      <Meta
         title="Terms & Conditions - urlzip"
         description="Read the terms of service for using our URL shortening platform."
         url="https://urlzip.in/terms-and-conditions"
       />
       <div className="container mx-auto px-4 flex-1">
-        <header className="py-6">
-          <h1 className="text-3xl font-bold text-center">Terms and Conditions</h1>
-        </header>
+        <Header />
         <main className="py-12 text-gray-800 max-w-3xl mx-auto">
+          <h1 className="text-3xl font-bold mb-6">Terms and Conditions</h1>
+
           <p className="mb-4">
             By using our URL shortening service, you agree to the following terms and conditions. If you do not agree, please do not use our service.
           </p>
@@ -60,9 +63,10 @@ const TermsAndConditions: React.FC = () => {
           </p>
 
           <h2 className="text-xl font-semibold mb-2">6. Contact</h2>
-          <p>If you have questions, contact us at <span className="text-blue-600 underline">your-email@example.com</span>.</p>
+          <p>If you have questions, contact us at <a href="mailto:support@urlzip.in" className="text-primary underline">support@urlzip.in</a>.</p>
         </main>
       </div>
+      <Footer />
     </div>
   );
 };
