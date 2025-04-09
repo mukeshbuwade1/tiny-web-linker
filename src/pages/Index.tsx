@@ -3,10 +3,16 @@ import Header from "@/components/Header";
 import UrlShortener from "@/components/UrlShortener";
 import Stats from "@/components/Stats";
 import Footer from "@/components/Footer";
+import Meta from "@/components/Meta";
 
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
+       <Meta
+        title="Free URL Shortener"
+        description="Shorten your long URLs into concise, manageable links with UrlZip."
+        url="https://urlzip.in/"
+      />
       <div className="container mx-auto px-4 flex-1">
         <Header />
         
