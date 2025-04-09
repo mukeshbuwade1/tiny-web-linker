@@ -9,7 +9,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col">
        <Meta
-        title="UrlZip - URL Shortener"
+        title="Free URL Shortener"
         description="Shorten your long URLs into concise, manageable links with UrlZip."
         url="https://urlzip.in/"
       />
