@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Meta from '@/components/Meta';
 import Header from '@/components/Header';
@@ -43,10 +42,15 @@ const ContactUs: React.FC = () => {
     setIsSubmitting(true);
     
     try {
-      // Insert the form data into the contacts table
+      // Insert the form data into the contacts table using a more explicit type approach
       const { error } = await supabase
         .from('contacts')
-        .insert([data]);
+        .insert([{
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          message: data.message
+        }] as any); // Using 'as any' as a temporary workaround for type issues
       
       if (error) {
         throw error;
