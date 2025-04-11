@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import Meta from '@/components/Meta';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -8,13 +7,75 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Mail, Phone, MapPin } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+// Define form validation schema
+const formSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
+  email: z.string().email({ message: 'Please enter a valid email address' }),
+  subject: z.string().min(3, { message: 'Subject must be at least 3 characters' }),
+  message: z.string().min(10, { message: 'Message must be at least 10 characters' }),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 const ContactUs: React.FC = () => {
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // This would be replaced with actual form submission logic
-    console.log('Form submitted');
-    // For future implementation: Form validation and API submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Initialize react-hook-form with zod resolver
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      subject: '',
+      message: '',
+    },
+  });
+
+  const onSubmit = async (data: FormValues) => {
+    setIsSubmitting(true);
+    
+    try {
+      // Insert the form data into the contacts table using a more explicit type approach
+      const { error } = await supabase
+        .from('contacts')
+        .insert([{
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          message: data.message
+        }] as any); // Using 'as any' as a temporary workaround for type issues
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Show success message
+      toast({
+        title: "Message Sent!",
+        description: "Thanks for contacting us. We'll get back to you soon.",
+        variant: "default",
+      });
+      
+      // Reset the form
+      form.reset();
+      
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast({
+        title: "Failed to send message",
+        description: "There was an error sending your message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -71,29 +132,77 @@ const ContactUs: React.FC = () => {
               
               <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                 <h2 className="text-xl font-semibold mb-4">Send a Message</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input id="name" placeholder="Your name" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="Your email" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="subject">Subject</Label>
-                    <Input id="subject" placeholder="What is this regarding?" />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="message">Message</Label>
-                    <Textarea id="message" placeholder="How can we help you?" className="min-h-[120px]" />
-                  </div>
-                  
-                  <Button type="submit" className="w-full">Send Message</Button>
-                </form>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Your name" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="Your email" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="subject"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Subject</FormLabel>
+                          <FormControl>
+                            <Input placeholder="What is this regarding?" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="message"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Message</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="How can we help you?" 
+                              className="min-h-[120px]" 
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button 
+                      type="submit" 
+                      className="w-full"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
+                    </Button>
+                  </form>
+                </Form>
               </div>
             </div>
           </div>
