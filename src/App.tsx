@@ -12,6 +12,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ContactUs from "./pages/ContactUs";
 import AboutUs from "./pages/AboutUs";
 import ReportMalicious from "./pages/ReportMalicious";
+import Analytics from "./pages/Analytics";
 import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/contact-us" element={<ContactUs />} />
           <Route path="/about-us" element={<AboutUs />} />
           <Route path="/report-malicious" element={<ReportMalicious />} />
+          <Route path="/analytics" element={<Analytics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
