@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Meta from '@/components/Meta';
@@ -31,6 +30,12 @@ interface MonthlyStats {
   totalUrls: number;
 }
 
+interface SearchedUrlStats {
+  clicks: number;
+  monthlyClicks: {month: string, clicks: number}[];
+  shortCode: string | null;
+}
+
 const Analytics: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
@@ -40,13 +45,11 @@ const Analytics: React.FC = () => {
   const [totalUrls, setTotalUrls] = useState(0);
   const [totalClicks, setTotalClicks] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
-  const [searchedUrlStats, setSearchedUrlStats] = useState<{clicks: number, monthlyClicks: {month: string, clicks: number}[]}, shortCode: string | null>(null);
+  const [searchedUrlStats, setSearchedUrlStats] = useState<SearchedUrlStats | null>(null);
 
-  // Get aggregate stats for all URLs
   const fetchAggregateStats = async () => {
     setStatsLoading(true);
     try {
-      // Get total URLs count
       const { count: urlCount, error: urlError } = await supabase
         .from('short_urls')
         .select('*', { count: 'exact', head: true });
@@ -54,7 +57,6 @@ const Analytics: React.FC = () => {
       if (urlError) throw urlError;
       setTotalUrls(urlCount || 0);
       
-      // Get total clicks
       const { data: clicksData, error: clicksError } = await supabase
         .from('short_urls')
         .select('clicks')
@@ -64,7 +66,6 @@ const Analytics: React.FC = () => {
       const totalClickCount = clicksData.reduce((sum, item) => sum + (item.clicks || 0), 0);
       setTotalClicks(totalClickCount);
       
-      // Get monthly stats for the last 5 months
       const now = new Date();
       const monthlyStatsData: MonthlyStats[] = [];
       
@@ -72,10 +73,8 @@ const Analytics: React.FC = () => {
         const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
         const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
         
-        // Format month name
         const monthName = month.toLocaleDateString('en-US', { month: 'short' });
         
-        // Get URLs created in this month
         const { data: monthUrls, error: monthUrlsError } = await supabase
           .from('short_urls')
           .select('created_at, clicks')
@@ -93,7 +92,6 @@ const Analytics: React.FC = () => {
         });
       }
       
-      // Reverse to show oldest to newest
       setMonthlyStats(monthlyStatsData.reverse());
     } catch (error) {
       console.error("Error fetching aggregate stats:", error);
@@ -103,29 +101,23 @@ const Analytics: React.FC = () => {
     }
   };
 
-  // Extract short code from full URL
   const extractShortCode = (url: string): string | null => {
     try {
-      // Try to extract from full URL format (e.g., urlzip.in/HrXnyc or https://urlzip.in/HrXnyc)
       const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
       const pathParts = urlObj.pathname.split('/').filter(Boolean);
       if (pathParts.length > 0) {
         return pathParts[0];
       }
       
-      // If no path parts, maybe it's just the short code
       return url.trim();
     } catch (error) {
-      // If not a valid URL, assume it's just the short code
       return url.trim();
     }
   };
 
-  // Get stats for a specific URL when searched
   const fetchUrlStats = async (searchInput: string) => {
     setStatsLoading(true);
     
-    // Try to extract short code if full URL is provided
     const shortCode = extractShortCode(searchInput);
     
     if (!shortCode) {
@@ -144,22 +136,16 @@ const Analytics: React.FC = () => {
       if (error) throw error;
       
       if (data) {
-        // Generate monthly clicks data (for demo purposes)
-        // In a real app, this would come from a separate clicks table with timestamps
         const createdDate = new Date(data.created_at);
         const now = new Date();
         const monthlyClicksData = [];
         
-        // Calculate months between creation and now (max 5)
         let monthsToShow = Math.min(5, 
           (now.getFullYear() - createdDate.getFullYear()) * 12 + 
           now.getMonth() - createdDate.getMonth() + 1);
         
-        // If URL was created this month, show at least 1 month
         monthsToShow = Math.max(1, monthsToShow);
         
-        // Generate random distribution of clicks per month
-        // In a real app, this would be actual data from a clicks table
         const totalClicks = data.clicks || 0;
         let remainingClicks = totalClicks;
         
@@ -169,11 +155,9 @@ const Analytics: React.FC = () => {
           
           let monthClicks = 0;
           if (i === monthsToShow - 1) {
-            // Last month gets all remaining clicks
             monthClicks = remainingClicks;
           } else {
-            // Random distribution for other months
-            const randomPercentage = Math.random() * 0.5; // 0-50% of remaining
+            const randomPercentage = Math.random() * 0.5;
             monthClicks = Math.floor(remainingClicks * randomPercentage);
             remainingClicks -= monthClicks;
           }
@@ -199,22 +183,18 @@ const Analytics: React.FC = () => {
     }
   };
 
-  // Handle search
   const handleSearch = () => {
     if (!searchTerm.trim()) {
       setSearchedUrlStats(null);
       return;
     }
     
-    // Search by short code or full URL
     fetchUrlStats(searchTerm.trim());
   };
 
   useEffect(() => {
-    // Load initial data
     setIsLoading(true);
     
-    // Fetch aggregate stats
     fetchAggregateStats()
       .finally(() => setIsLoading(false));
   }, []);
@@ -239,7 +219,6 @@ const Analytics: React.FC = () => {
             </div>
           ) : (
             <>
-              {/* Search URL section */}
               <div className="mb-8 flex flex-col sm:flex-row gap-4">
                 <div className="flex flex-1 gap-2 items-center">
                   <Input
@@ -256,9 +235,7 @@ const Analytics: React.FC = () => {
                 </div>
               </div>
               
-              {/* Summary stats section */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                {/* URL Creation Stats Card */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col h-full">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">Platform Performance</h2>
@@ -297,7 +274,6 @@ const Analytics: React.FC = () => {
                   )}
                 </div>
                 
-                {/* Clicks Stats Card */}
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">
