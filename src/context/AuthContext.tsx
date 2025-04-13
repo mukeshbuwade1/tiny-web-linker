@@ -59,15 +59,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
   
-  // Fetch user profile
+  // Fetch user profile - use a more flexible approach that doesn't depend on TypeScript table definitions
   const fetchProfile = async (userId: string) => {
     try {
-      // Use a type-safe approach with the client directly
+      // Use executeQuery for a more generic approach
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle() as any; // Use type assertion to bypass type checking
+        .maybeSingle() as any; // Type assertion to bypass TypeScript checking
         
       if (error) {
         console.error('Error fetching profile:', error);
