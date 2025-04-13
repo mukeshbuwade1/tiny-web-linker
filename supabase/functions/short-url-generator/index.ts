@@ -63,6 +63,19 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Extract user ID from JWT if available
+    let userId = null;
+    const authHeader = req.headers.get('Authorization');
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      
+      if (user && !userError) {
+        userId = user.id;
+      }
+    }
+
     // Generate a unique short code
     let shortCode = generateShortCode();
     let isUnique = false;
@@ -86,7 +99,11 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase
       .from('short_urls')
       .insert([
-        { original_url: url, short_code: shortCode }
+        { 
+          original_url: url, 
+          short_code: shortCode,
+          user_id: userId
+        }
       ])
       .select()
       .single();

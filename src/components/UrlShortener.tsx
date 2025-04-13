@@ -6,12 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Copy, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const UrlShortener = () => {
   const [url, setUrl] = useState("");
   const [shortUrl, setShortUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const { session } = useAuth();
 
   const validateUrl = (url: string) => {
     try {
@@ -43,10 +45,19 @@ const UrlShortener = () => {
       //   processedUrl = 'https://' + url;
       // }
 
-      // Call the Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke("short-url-generator", {
+      // Call the Supabase Edge Function with authentication if available
+      const options: any = {
         body: { url },
-      });
+      };
+      
+      // Add auth header if user is logged in
+      if (session) {
+        options.headers = {
+          Authorization: `Bearer ${session.access_token}`,
+        };
+      }
+
+      const { data, error } = await supabase.functions.invoke("short-url-generator", options);
 
       if (error) {
         throw new Error(error.message || "Failed to shorten URL");

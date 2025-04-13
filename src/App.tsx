@@ -13,7 +13,10 @@ import ContactUs from "./pages/ContactUs";
 import AboutUs from "./pages/AboutUs";
 import ReportMalicious from "./pages/ReportMalicious";
 import Analytics from "./pages/Analytics";
+import Auth from "./pages/Auth";
+import QRCode from "./pages/QRCode";
 import ScrollToTop from "./components/ScrollToTop";
+import { AuthProvider } from "./context/AuthContext";
 
 const queryClient = new QueryClient();
 
@@ -23,20 +26,24 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-      <ScrollToTop>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/:shortCode" element={<Redirect />} />
-          <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/contact-us" element={<ContactUs />} />
-          <Route path="/about-us" element={<AboutUs />} />
-          <Route path="/report-malicious" element={<ReportMalicious />} />
-          <Route path="/analytics" element={<Analytics />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        </ScrollToTop>
+        <AuthProvider>
+          <ScrollToTop>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/:shortCode" element={<Redirect />} />
+              <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/contact-us" element={<ContactUs />} />
+              <Route path="/about-us" element={<AboutUs />} />
+              <Route path="/report-malicious" element={<ReportMalicious />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/qr-code" element={<QRCode />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ScrollToTop>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
