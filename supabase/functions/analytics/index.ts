@@ -1,190 +1,234 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0'
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
-
-// Define CORS headers for our function
+// Define CORS headers for browser requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+}
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Create a Supabase client with the project URL and anon key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://canfxcahoyelwlahexrf.supabase.co';
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhbmZ4Y2Fob3llbHdsYWhleHJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5Mjg2NDgsImV4cCI6MjA1OTUwNDY0OH0.5ui_bcMYWJlEDx8wtbxL8EApEoj7C3Ig3mJkkxWxx4s';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Parse request body
+    const body = await req.json();
+    const { action } = body;
 
-    // Parse the request body
-    const requestData = await req.json();
-    const { action, shortCode } = requestData;
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Determine which analytics data to fetch based on the action
+    // Get user ID from JWT if available
+    let userId = null;
+    const authHeader = req.headers.get('Authorization');
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      
+      if (user && !userError) {
+        userId = user.id;
+      }
+    }
+
+    // Handle action for overview analytics data
     if (action === 'overview') {
-      // Get total URLs count
-      const { count: totalUrls, error: urlError } = await supabase
+      // Fetch total URL count
+      const { data: urls, error: urlsError } = await supabase
         .from('short_urls')
-        .select('*', { count: 'exact', head: true });
-      
-      if (urlError) throw urlError;
-      
-      // Get total clicks
+        .select('*', { count: 'exact' });
+
+      if (urlsError) throw urlsError;
+      const totalUrls = urls ? urls.length : 0;
+
+      // Fetch total click count
       const { data: clicksData, error: clicksError } = await supabase
         .from('short_urls')
-        .select('clicks')
-        .not('clicks', 'is', null);
-      
+        .select('clicks');
+
       if (clicksError) throw clicksError;
-      const totalClicks = clicksData.reduce((sum, item) => sum + (item.clicks || 0), 0);
-      
-      // Get monthly stats for the last 5 months
-      const now = new Date();
-      const monthlyStats = [];
-      
-      for (let i = 0; i < 5; i++) {
-        const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-        
-        // Format month name
-        const monthName = month.toLocaleDateString('en-US', { month: 'short' });
-        
-        // Get URLs created in this month
-        const { data: monthUrls, error: monthUrlsError } = await supabase
-          .from('short_urls')
-          .select('created_at, clicks')
-          .gte('created_at', month.toISOString())
-          .lte('created_at', monthEnd.toISOString());
-        
-        if (monthUrlsError) throw monthUrlsError;
-        
-        const monthlyClickCount = monthUrls.reduce((sum, item) => sum + (item.clicks || 0), 0);
-        
-        monthlyStats.push({
-          month: monthName,
-          totalClicks: monthlyClickCount,
-          totalUrls: monthUrls.length
-        });
-      }
-      
-      // Return overview data
+      const totalClicks = clicksData?.reduce((acc, curr) => acc + (curr.clicks || 0), 0) || 0;
+
+      // Fetch monthly stats
+      const { data: monthlyData, error: monthlyError } = await supabase.rpc('get_monthly_stats');
+
+      if (monthlyError) throw monthlyError;
+
+      // Fetch QR code stats
+      const { data: qrCodeData, error: qrCodeError } = await supabase.rpc('get_qr_code_stats');
+
+      if (qrCodeError) throw qrCodeError;
+
       return new Response(
-        JSON.stringify({
-          totalUrls: totalUrls || 0,
-          totalClicks,
-          monthlyStats: monthlyStats.reverse() // Oldest to newest
+        JSON.stringify({ 
+          totalUrls, 
+          totalClicks, 
+          monthlyStats: monthlyData,
+          qrCodeStats: qrCodeData
         }),
         { 
+          status: 200, 
           headers: { 
-            ...corsHeaders,
+            ...corsHeaders, 
             'Content-Type': 'application/json' 
-          },
-          status: 200 
-        }
-      );
-    } 
-    else if (action === 'url' && shortCode) {
-      // Fetch stats for a specific URL
-      const { data, error } = await supabase
-        .from('short_urls')
-        .select('clicks, created_at')
-        .eq('short_code', shortCode)
-        .single();
-      
-      if (error) {
-        return new Response(
-          JSON.stringify({ error: 'URL not found' }),
-          { 
-            headers: { 
-              ...corsHeaders,
-              'Content-Type': 'application/json' 
-            },
-            status: 404 
-          }
-        );
-      }
-      
-      // Generate monthly clicks data
-      const createdDate = new Date(data.created_at);
-      const now = new Date();
-      const monthlyClicksData = [];
-      
-      // Calculate months between creation and now (max 5)
-      let monthsToShow = Math.min(5, 
-        (now.getFullYear() - createdDate.getFullYear()) * 12 + 
-        now.getMonth() - createdDate.getMonth() + 1);
-      
-      // If URL was created this month, show at least 1 month
-      monthsToShow = Math.max(1, monthsToShow);
-      
-      // Generate distribution of clicks per month (simplified for demo)
-      const totalClicks = data.clicks || 0;
-      let remainingClicks = totalClicks;
-      
-      for (let i = 0; i < monthsToShow; i++) {
-        const month = new Date(now.getFullYear(), now.getMonth() - (monthsToShow - 1) + i);
-        const monthName = month.toLocaleDateString('en-US', { month: 'short' });
-        
-        let monthClicks = 0;
-        if (i === monthsToShow - 1) {
-          // Last month gets all remaining clicks
-          monthClicks = remainingClicks;
-        } else {
-          // Random distribution for other months
-          const randomPercentage = Math.random() * 0.5; // 0-50% of remaining
-          monthClicks = Math.floor(remainingClicks * randomPercentage);
-          remainingClicks -= monthClicks;
-        }
-        
-        monthlyClicksData.push({
-          month: monthName,
-          clicks: monthClicks
-        });
-      }
-      
-      return new Response(
-        JSON.stringify({
-          clicks: totalClicks,
-          monthlyClicks: monthlyClicksData,
-          shortCode
-        }),
-        { 
-          headers: { 
-            ...corsHeaders,
-            'Content-Type': 'application/json' 
-          },
-          status: 200 
+          } 
         }
       );
     }
     
-    // Invalid action
-    return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        },
-        status: 400 
+    // Handle action for URL-specific analytics
+    else if (action === 'url') {
+      const { shortCode } = body;
+
+      if (!shortCode) {
+        return new Response(
+          JSON.stringify({ error: 'Short code is required' }),
+          { 
+            status: 400, 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
       }
-    );
+
+      // Fetch URL details
+      const { data: urlData, error: urlError } = await supabase
+        .from('short_urls')
+        .select('*')
+        .eq('short_code', shortCode)
+        .single();
+
+      if (urlError) {
+        console.error('Error fetching URL:', urlError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch URL' }),
+          { 
+            status: 500, 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      }
+
+      if (!urlData) {
+        return new Response(
+          JSON.stringify({ error: 'URL not found' }),
+          { 
+            status: 404, 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      }
+
+      // Fetch monthly clicks for the URL
+      const { data: monthlyClicks, error: monthlyClicksError } = await supabase.rpc('get_monthly_clicks', {
+        short_code: shortCode
+      });
+
+      if (monthlyClicksError) {
+        console.error('Error fetching monthly clicks:', monthlyClicksError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch monthly clicks' }),
+          { 
+            status: 500, 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          clicks: urlData.clicks || 0,
+          monthlyClicks,
+          shortCode: urlData.short_code
+        }),
+        { 
+          status: 200, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
     
+    // Handle tracking QR code generation
+    else if (action === 'track-qr-code') {
+      const { content, wasShortened } = body;
+      
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: 'Authentication required' }),
+          { 
+            status: 401, 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      }
+      
+      // Record the QR code generation
+      await supabase
+        .from('qr_code_analytics')
+        .insert({
+          user_id: userId,
+          content: content,
+          was_shortened: wasShortened,
+        });
+      
+      return new Response(
+        JSON.stringify({ success: true }),
+        { 
+          status: 200, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+    
+    // Handle unknown action
+    else {
+      return new Response(
+        JSON.stringify({ error: 'Unknown action' }),
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+
   } catch (error) {
-    console.error("Error processing request:", error);
+    console.error('Error processing request:', error);
     
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
       { 
+        status: 500, 
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json' 
-        },
-        status: 500 
+        } 
       }
     );
   }

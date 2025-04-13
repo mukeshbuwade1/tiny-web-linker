@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -25,11 +26,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import Meta from "@/components/Meta";
-import { useEffect } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, Download } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 // QR code form schema
 const qrCodeSchema = z.object({
@@ -37,12 +38,14 @@ const qrCodeSchema = z.object({
   size: z.number().min(100).max(500),
   color: z.string(),
   backgroundColor: z.string(),
+  shortenUrl: z.boolean().default(false)
 });
 
 type QRCodeFormValues = z.infer<typeof qrCodeSchema>;
 
 const QRCode = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [shortUrl, setShortUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -55,6 +58,65 @@ const QRCode = () => {
     }
   }, [session, navigate]);
 
+  // URL validation
+  const validateUrl = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  // Shorten URL
+  const shortenUrl = async (url: string) => {
+    try {
+      // Call the Supabase Edge Function with authentication
+      const options: any = {
+        body: { url },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      };
+
+      const { data, error } = await supabase.functions.invoke("short-url-generator", options);
+
+      if (error) {
+        throw new Error(error.message || "Failed to shorten URL");
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      return data.shortUrl;
+    } catch (error) {
+      console.error("Error shortening URL:", error);
+      throw error;
+    }
+  };
+
+  // Track QR code generation
+  const trackQrCode = async (content: string, wasShortened: boolean) => {
+    if (!session) return;
+    
+    try {
+      // Record QR code generation in analytics
+      await supabase.functions.invoke("analytics", {
+        body: { 
+          action: 'track-qr-code',
+          content,
+          wasShortened
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        }
+      });
+    } catch (error) {
+      console.error("Error tracking QR code:", error);
+    }
+  };
+
   // QR code form
   const form = useForm<QRCodeFormValues>({
     resolver: zodResolver(qrCodeSchema),
@@ -63,6 +125,7 @@ const QRCode = () => {
       size: 300,
       color: "000000",
       backgroundColor: "FFFFFF",
+      shortenUrl: false
     },
   });
 
@@ -70,9 +133,31 @@ const QRCode = () => {
   const generateQrCode = async (values: QRCodeFormValues) => {
     setIsLoading(true);
     try {
+      let content = values.text;
+      let wasShortened = false;
+      
+      // If URL shortening is enabled and the content is a valid URL, shorten it
+      if (values.shortenUrl && validateUrl(values.text)) {
+        try {
+          const shortened = await shortenUrl(values.text);
+          content = shortened;
+          setShortUrl(shortened);
+          wasShortened = true;
+        } catch (error) {
+          toast.error("Failed to shorten URL. Using original URL instead.");
+        }
+      } else {
+        setShortUrl(null);
+      }
+      
       // Use the QR code API
-      const url = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(values.text)}&size=${values.size}x${values.size}&color=${values.color.replace('#', '')}&bgcolor=${values.backgroundColor.replace('#', '')}`;
+      const url = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(content)}&size=${values.size}x${values.size}&color=${values.color.replace('#', '')}&bgcolor=${values.backgroundColor.replace('#', '')}`;
       setQrCodeUrl(url);
+      
+      // Track QR code generation
+      await trackQrCode(content, wasShortened);
+      
+      toast.success("QR code generated successfully!");
     } catch (error) {
       console.error("Error generating QR code:", error);
       toast.error("Failed to generate QR code");
@@ -126,6 +211,27 @@ const QRCode = () => {
                                 <Input placeholder="Enter URL or text" {...field} />
                               </FormControl>
                               <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={form.control}
+                          name="shortenUrl"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                              <div className="space-y-1 leading-none">
+                                <FormLabel>Shorten URL</FormLabel>
+                                <p className="text-sm text-muted-foreground">
+                                  Create a short URL before generating QR code
+                                </p>
+                              </div>
                             </FormItem>
                           )}
                         />
@@ -228,6 +334,12 @@ const QRCode = () => {
                         <div className="mb-4 p-4 bg-white border rounded-lg inline-block">
                           <img src={qrCodeUrl} alt="Generated QR Code" className="max-w-full" />
                         </div>
+                        {shortUrl && (
+                          <div className="mb-3 text-sm">
+                            <p className="font-medium">Shortened URL:</p>
+                            <p className="text-primary break-all">{shortUrl}</p>
+                          </div>
+                        )}
                         <Button onClick={downloadQrCode} className="mt-2">
                           <Download className="mr-2 h-4 w-4" />
                           Download
