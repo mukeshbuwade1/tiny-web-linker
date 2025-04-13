@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import Meta from "@/components/Meta";
-import { useEffect } from "react";
+import { Link } from "react-router-dom";
 
 // Login form schema
 const loginSchema = z.object({
@@ -48,13 +48,19 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp, session } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const reset = searchParams.get("reset");
   
   // Redirect if already authenticated
   useEffect(() => {
     if (session) {
-      navigate("/");
+      navigate("/dashboard");
     }
-  }, [session, navigate]);
+    
+    if (reset) {
+      toast.info("Please login with your new password");
+    }
+  }, [session, navigate, reset]);
 
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -94,7 +100,7 @@ const Auth = () => {
       }
       
       toast.success("Signed in successfully");
-      navigate("/");
+      navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
       toast.error("An unexpected error occurred");
@@ -170,7 +176,15 @@ const Auth = () => {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Password</FormLabel>
+                            <Link 
+                              to="/forgot-password" 
+                              className="text-xs text-primary hover:underline"
+                            >
+                              Forgot password?
+                            </Link>
+                          </div>
                           <FormControl>
                             <Input type="password" placeholder="••••••••" {...field} />
                           </FormControl>

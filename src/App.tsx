@@ -16,6 +16,9 @@ import ReportMalicious from "./pages/ReportMalicious";
 import Analytics from "./pages/Analytics";
 import Auth from "./pages/Auth";
 import QRCode from "./pages/QRCode";
+import ForgotPassword from "./pages/ForgotPassword";
+import Dashboard from "./pages/Dashboard";
+import UserLinks from "./pages/UserLinks";
 import ScrollToTop from "./components/ScrollToTop";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -42,6 +45,9 @@ const App = () => {
                   <Route path="/report-malicious" element={<ReportMalicious />} />
                   <Route path="/analytics" element={<Analytics />} />
                   <Route path="/auth" element={<Auth />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/user-links" element={<UserLinks />} />
                   <Route path="/qr-code" element={<QRCode />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
