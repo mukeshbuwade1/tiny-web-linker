@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { MonthlyStats, SearchedUrlStats } from '@/types/analytics';
+import { MonthlyStats, SearchedUrlStats, QrCodeStats } from '@/types/analytics';
 import { toast } from 'sonner';
 
 export const useAnalytics = () => {
@@ -13,6 +13,7 @@ export const useAnalytics = () => {
   const [totalClicks, setTotalClicks] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
   const [searchedUrlStats, setSearchedUrlStats] = useState<SearchedUrlStats | null>(null);
+  const [qrCodeStats, setQrCodeStats] = useState<QrCodeStats | null>(null);
 
   const fetchAggregateStats = async () => {
     setStatsLoading(true);
@@ -28,6 +29,7 @@ export const useAnalytics = () => {
       setTotalUrls(data.totalUrls);
       setTotalClicks(data.totalClicks);
       setMonthlyStats(data.monthlyStats);
+      setQrCodeStats(data.qrCodeStats || null);
       
     } catch (error) {
       console.error("Error fetching aggregate stats:", error);
@@ -126,6 +128,7 @@ export const useAnalytics = () => {
     totalClicks,
     monthlyStats,
     searchedUrlStats,
+    qrCodeStats,
     handleSearch,
     resetSearch
   };
