@@ -17,55 +17,18 @@ export const useAnalytics = () => {
   const fetchAggregateStats = async () => {
     setStatsLoading(true);
     try {
-      // Get total URLs count
-      const { count: urlCount, error: urlError } = await supabase
-        .from('short_urls')
-        .select('*', { count: 'exact', head: true });
+      // Call the edge function to get aggregated stats
+      const { data, error } = await supabase.functions.invoke('analytics', {
+        body: { action: 'overview' }
+      });
+
+      if (error) throw error;
       
-      if (urlError) throw urlError;
-      setTotalUrls(urlCount || 0);
+      // Set state with the data returned from the edge function
+      setTotalUrls(data.totalUrls);
+      setTotalClicks(data.totalClicks);
+      setMonthlyStats(data.monthlyStats);
       
-      // Get total clicks
-      const { data: clicksData, error: clicksError } = await supabase
-        .from('short_urls')
-        .select('clicks')
-        .not('clicks', 'is', null);
-      
-      if (clicksError) throw clicksError;
-      const totalClickCount = clicksData.reduce((sum, item) => sum + (item.clicks || 0), 0);
-      setTotalClicks(totalClickCount);
-      
-      // Get monthly stats for the last 5 months
-      const now = new Date();
-      const monthlyStatsData: MonthlyStats[] = [];
-      
-      for (let i = 0; i < 5; i++) {
-        const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-        
-        // Format month name
-        const monthName = month.toLocaleDateString('en-US', { month: 'short' });
-        
-        // Get URLs created in this month
-        const { data: monthUrls, error: monthUrlsError } = await supabase
-          .from('short_urls')
-          .select('created_at, clicks')
-          .gte('created_at', month.toISOString())
-          .lte('created_at', monthEnd.toISOString());
-        
-        if (monthUrlsError) throw monthUrlsError;
-        
-        const monthlyClickCount = monthUrls.reduce((sum, item) => sum + (item.clicks || 0), 0);
-        
-        monthlyStatsData.push({
-          month: monthName,
-          totalClicks: monthlyClickCount,
-          totalUrls: monthUrls.length
-        });
-      }
-      
-      // Reverse to show oldest to newest
-      setMonthlyStats(monthlyStatsData.reverse());
     } catch (error) {
       console.error("Error fetching aggregate stats:", error);
       setError("Failed to load analytics data.");
@@ -106,61 +69,19 @@ export const useAnalytics = () => {
     }
     
     try {
-      const { data, error } = await supabase
-        .from('short_urls')
-        .select('clicks, created_at')
-        .eq('short_code', shortCode)
-        .single();
+      // Call the edge function to get URL-specific stats
+      const { data, error } = await supabase.functions.invoke('analytics', {
+        body: { action: 'url', shortCode }
+      });
       
       if (error) throw error;
       
-      if (data) {
-        // Generate monthly clicks data (for demo purposes)
-        // In a real app, this would come from a separate clicks table with timestamps
-        const createdDate = new Date(data.created_at);
-        const now = new Date();
-        const monthlyClicksData = [];
-        
-        // Calculate months between creation and now (max 5)
-        let monthsToShow = Math.min(5, 
-          (now.getFullYear() - createdDate.getFullYear()) * 12 + 
-          now.getMonth() - createdDate.getMonth() + 1);
-        
-        // If URL was created this month, show at least 1 month
-        monthsToShow = Math.max(1, monthsToShow);
-        
-        // Generate random distribution of clicks per month
-        // In a real app, this would be actual data from a clicks table
-        const totalClicks = data.clicks || 0;
-        let remainingClicks = totalClicks;
-        
-        for (let i = 0; i < monthsToShow; i++) {
-          const month = new Date(now.getFullYear(), now.getMonth() - (monthsToShow - 1) + i);
-          const monthName = month.toLocaleDateString('en-US', { month: 'short' });
-          
-          let monthClicks = 0;
-          if (i === monthsToShow - 1) {
-            // Last month gets all remaining clicks
-            monthClicks = remainingClicks;
-          } else {
-            // Random distribution for other months
-            const randomPercentage = Math.random() * 0.5; // 0-50% of remaining
-            monthClicks = Math.floor(remainingClicks * randomPercentage);
-            remainingClicks -= monthClicks;
-          }
-          
-          monthlyClicksData.push({
-            month: monthName,
-            clicks: monthClicks
-          });
-        }
-        
-        setSearchedUrlStats({
-          clicks: totalClicks,
-          monthlyClicks: monthlyClicksData,
-          shortCode
-        });
+      if (data.error) {
+        throw new Error(data.error);
       }
+      
+      setSearchedUrlStats(data);
+      
     } catch (error) {
       console.error("Error fetching URL stats:", error);
       setSearchedUrlStats(null);
