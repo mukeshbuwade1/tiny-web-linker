@@ -16,3 +16,9 @@ export interface QrCodeStats {
   shortened: number;
   monthly: {month: string, total: number}[];
 }
+
+export interface EnvironmentInfo {
+  name: string;
+  isProduction: boolean;
+  timestamp: string;
+}
