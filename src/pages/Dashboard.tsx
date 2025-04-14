@@ -1,10 +1,9 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Add missing Input import
+import { Input } from "@/components/ui/input";
 import Header from "@/components/Header";
 import Meta from "@/components/Meta";
 import { 
@@ -22,7 +21,6 @@ const Dashboard = () => {
   const { user, profile, session } = useAuth();
   const navigate = useNavigate();
   
-  // Protect route - redirect if not authenticated
   useEffect(() => {
     if (!session) {
       navigate("/auth");
@@ -30,7 +28,7 @@ const Dashboard = () => {
   }, [session, navigate]);
 
   if (!session) {
-    return null; // Don't render anything while checking auth status
+    return null;
   }
 
   return (
