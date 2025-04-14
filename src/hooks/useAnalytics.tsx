@@ -23,12 +23,28 @@ export const useAnalytics = () => {
         body: { action: 'overview' }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
+      
+      if (data.error) {
+        console.error("API returned error:", data.error);
+        throw new Error(data.error);
+      }
       
       // Set state with the data returned from the edge function
       setTotalUrls(data.totalUrls);
       setTotalClicks(data.totalClicks);
-      setMonthlyStats(data.monthlyStats);
+      
+      // Transform the monthly stats data to match our interface if needed
+      const mappedMonthlyStats = data.monthlyStats?.map((stat: any) => ({
+        month: stat.month,
+        total_urls: stat.total_urls,
+        total_clicks: stat.total_clicks
+      })) || [];
+      
+      setMonthlyStats(mappedMonthlyStats);
       setQrCodeStats(data.qrCodeStats || null);
       
     } catch (error) {
@@ -76,9 +92,13 @@ export const useAnalytics = () => {
         body: { action: 'url', shortCode }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
       
       if (data.error) {
+        console.error("API returned error:", data.error);
         throw new Error(data.error);
       }
       
@@ -87,7 +107,7 @@ export const useAnalytics = () => {
     } catch (error) {
       console.error("Error fetching URL stats:", error);
       setSearchedUrlStats(null);
-      toast.error("URL not found");
+      toast.error("URL not found or error fetching stats");
     } finally {
       setStatsLoading(false);
     }

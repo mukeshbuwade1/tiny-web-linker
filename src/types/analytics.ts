@@ -1,8 +1,8 @@
 
 export interface MonthlyStats {
   month: string;
-  totalClicks: number;
-  totalUrls: number;
+  total_urls: number;
+  total_clicks: number;
 }
 
 export interface SearchedUrlStats {

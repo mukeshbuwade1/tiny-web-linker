@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0'
 
 // Define CORS headers for browser requests
@@ -37,47 +38,57 @@ Deno.serve(async (req) => {
 
     // Handle action for overview analytics data
     if (action === 'overview') {
-      // Fetch total URL count
-      const { data: urls, error: urlsError } = await supabase
-        .from('short_urls')
-        .select('*', { count: 'exact' });
+      try {
+        // Fetch total URL count
+        const { count: totalUrls, error: urlsError } = await supabase
+          .from('short_urls')
+          .select('*', { count: 'exact', head: true });
 
-      if (urlsError) throw urlsError;
-      const totalUrls = urls ? urls.length : 0;
+        if (urlsError) throw urlsError;
 
-      // Fetch total click count
-      const { data: clicksData, error: clicksError } = await supabase
-        .from('short_urls')
-        .select('clicks');
+        // Fetch total click count
+        const { data: clicksData, error: clicksError } = await supabase
+          .from('short_urls')
+          .select('clicks');
 
-      if (clicksError) throw clicksError;
-      const totalClicks = clicksData?.reduce((acc, curr) => acc + (curr.clicks || 0), 0) || 0;
+        if (clicksError) throw clicksError;
+        const totalClicks = clicksData?.reduce((acc, curr) => acc + (curr.clicks || 0), 0) || 0;
 
-      // Fetch monthly stats
-      const { data: monthlyData, error: monthlyError } = await supabase.rpc('get_monthly_stats');
+        // Fetch monthly stats
+        const { data: monthlyData, error: monthlyError } = await supabase.rpc('get_monthly_stats');
 
-      if (monthlyError) throw monthlyError;
-
-      // Fetch QR code stats
-      const { data: qrCodeData, error: qrCodeError } = await supabase.rpc('get_qr_code_stats');
-
-      if (qrCodeError) throw qrCodeError;
-
-      return new Response(
-        JSON.stringify({ 
-          totalUrls, 
-          totalClicks, 
-          monthlyStats: monthlyData,
-          qrCodeStats: qrCodeData
-        }),
-        { 
-          status: 200, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
+        if (monthlyError) {
+          console.error('Monthly stats error:', monthlyError);
+          throw monthlyError;
         }
-      );
+
+        // Fetch QR code stats
+        const { data: qrCodeData, error: qrCodeError } = await supabase.rpc('get_qr_code_stats');
+
+        if (qrCodeError) {
+          console.error('QR code stats error:', qrCodeError);
+          throw qrCodeError;
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            totalUrls: totalUrls || 0, 
+            totalClicks, 
+            monthlyStats: monthlyData || [],
+            qrCodeStats: qrCodeData
+          }),
+          { 
+            status: 200, 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      } catch (error) {
+        console.error('Error in overview action:', error);
+        throw error;
+      }
     }
     
     // Handle action for URL-specific analytics
@@ -102,7 +113,7 @@ Deno.serve(async (req) => {
         .from('short_urls')
         .select('*')
         .eq('short_code', shortCode)
-        .single();
+        .maybeSingle();
 
       if (urlError) {
         console.error('Error fetching URL:', urlError);
@@ -153,7 +164,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           clicks: urlData.clicks || 0,
-          monthlyClicks,
+          monthlyClicks: monthlyClicks || [],
           shortCode: urlData.short_code
         }),
         { 
@@ -184,13 +195,27 @@ Deno.serve(async (req) => {
       }
       
       // Record the QR code generation
-      await supabase
+      const { error: insertError } = await supabase
         .from('qr_code_analytics')
         .insert({
           user_id: userId,
           content: content,
           was_shortened: wasShortened,
         });
+        
+      if (insertError) {
+        console.error('Error tracking QR code:', insertError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to track QR code generation' }),
+          { 
+            status: 500, 
+            headers: { 
+              ...corsHeaders,
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      }
       
       return new Response(
         JSON.stringify({ success: true }),

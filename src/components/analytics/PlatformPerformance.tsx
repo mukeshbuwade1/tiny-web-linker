@@ -15,6 +15,12 @@ const PlatformPerformance: React.FC<PlatformPerformanceProps> = ({
   monthlyStats,
   isLoading
 }) => {
+  // Transform data for chart
+  const chartData = monthlyStats.map(stat => ({
+    month: stat.month,
+    urls: stat.total_urls
+  }));
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
@@ -40,12 +46,12 @@ const PlatformPerformance: React.FC<PlatformPerformanceProps> = ({
             <h3 className="text-base font-medium mb-2">Monthly URL Creation</h3>
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyStats}>
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="totalUrls" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="urls" fill="#6366f1" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

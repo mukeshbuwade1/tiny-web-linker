@@ -36,6 +36,30 @@ export type Database = {
         }
         Relationships: []
       }
+      qr_code_analytics: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+          was_shortened: boolean | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+          was_shortened?: boolean | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          was_shortened?: boolean | null
+        }
+        Relationships: []
+      }
       short_urls: {
         Row: {
           clicks: number | null
@@ -43,6 +67,7 @@ export type Database = {
           id: number
           original_url: string
           short_code: string
+          user_id: string | null
         }
         Insert: {
           clicks?: number | null
@@ -50,6 +75,7 @@ export type Database = {
           id?: number
           original_url: string
           short_code: string
+          user_id?: string | null
         }
         Update: {
           clicks?: number | null
@@ -57,6 +83,7 @@ export type Database = {
           id?: number
           original_url?: string
           short_code?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -65,7 +92,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_monthly_clicks: {
+        Args: { short_code: string }
+        Returns: {
+          month: string
+          clicks: number
+        }[]
+      }
+      get_monthly_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          month: string
+          total_urls: number
+          total_clicks: number
+        }[]
+      }
+      get_qr_code_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

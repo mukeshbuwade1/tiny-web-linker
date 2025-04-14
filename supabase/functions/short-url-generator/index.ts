@@ -95,16 +95,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Prepare data for insertion
+    const shortUrlData: any = { 
+      original_url: url, 
+      short_code: shortCode,
+    };
+    
+    // Only add user_id if we have a logged-in user
+    if (userId) {
+      shortUrlData.user_id = userId;
+    }
+
     // Insert the new short URL into the database
     const { data, error } = await supabase
       .from('short_urls')
-      .insert([
-        { 
-          original_url: url, 
-          short_code: shortCode,
-          user_id: userId
-        }
-      ])
+      .insert([shortUrlData])
       .select()
       .single();
 
@@ -123,8 +128,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Construct the short URL (using request URL for base)
-    const baseUrl = `urlzip.in`
+    // Construct the short URL
+    const baseUrl = `urlzip.in`;
     const shortUrl = `${baseUrl}/${shortCode}`;
 
     // Return the short URL
