@@ -19,6 +19,7 @@ import QRCode from "./pages/QRCode";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import UserLinks from "./pages/UserLinks";
+import EnvManagement from "./pages/EnvManagement";
 import ScrollToTop from "./components/ScrollToTop";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -49,6 +50,7 @@ const App = () => {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/user-links" element={<UserLinks />} />
                   <Route path="/qr-code" element={<QRCode />} />
+                  <Route path="/env-management" element={<EnvManagement />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
