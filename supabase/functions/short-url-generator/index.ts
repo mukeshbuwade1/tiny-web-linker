@@ -63,6 +63,19 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Extract user ID from JWT if available
+    let userId = null;
+    const authHeader = req.headers.get('Authorization');
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      
+      if (user && !userError) {
+        userId = user.id;
+      }
+    }
+
     // Generate a unique short code
     let shortCode = generateShortCode();
     let isUnique = false;
@@ -82,12 +95,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Prepare data for insertion
+    const shortUrlData: any = { 
+      original_url: url, 
+      short_code: shortCode,
+    };
+    
+    // Only add user_id if we have a logged-in user
+    if (userId) {
+      shortUrlData.user_id = userId;
+    }
+
     // Insert the new short URL into the database
     const { data, error } = await supabase
       .from('short_urls')
-      .insert([
-        { original_url: url, short_code: shortCode }
-      ])
+      .insert([shortUrlData])
       .select()
       .single();
 
@@ -106,8 +128,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Construct the short URL (using request URL for base)
-    const baseUrl = `urlzip.in`
+    // Construct the short URL
+    const baseUrl = `urlzip.in`;
     const shortUrl = `${baseUrl}/${shortCode}`;
 
     // Return the short URL

@@ -18,6 +18,14 @@ const ClickPerformance: React.FC<ClickPerformanceProps> = ({
   searchedUrlStats,
   isLoading
 }) => {
+  // Transform data for chart if viewing all URLs
+  const chartData = searchedUrlStats ? 
+    searchedUrlStats.monthlyClicks : 
+    monthlyStats.map(stat => ({
+      month: stat.month,
+      clicks: stat.total_clicks
+    }));
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
       <div className="flex items-center justify-between mb-4">
@@ -48,18 +56,12 @@ const ClickPerformance: React.FC<ClickPerformanceProps> = ({
           <h3 className="text-base font-medium mb-2">Monthly Clicks</h3>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={searchedUrlStats ? searchedUrlStats.monthlyClicks : monthlyStats}
-              >
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar 
-                  dataKey={searchedUrlStats ? "clicks" : "totalClicks"} 
-                  fill="#10b981" 
-                  radius={[4, 4, 0, 0]} 
-                />
+                <Bar dataKey="clicks" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

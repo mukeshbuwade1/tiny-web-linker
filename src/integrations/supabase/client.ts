@@ -3,11 +3,34 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+// Define environment configurations
+interface SupabaseConfig {
+  url: string;
+  key: string;
+}
 
-// Define fallbacks in case env vars are not available
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://canfxcahoyelwlahexrf.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhbmZ4Y2Fob3llbHdsYWhleHJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5Mjg2NDgsImV4cCI6MjA1OTUwNDY0OH0.5ui_bcMYWJlEDx8wtbxL8EApEoj7C3Ig3mJkkxWxx4s';
+// Environment-specific configurations
+const configurations: Record<string, SupabaseConfig> = {
+  // Production configuration (default)
+  production: {
+    url: 'https://canfxcahoyelwlahexrf.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhbmZ4Y2Fob3llbHdsYWhleHJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5Mjg2NDgsImV4cCI6MjA1OTUwNDY0OH0.5ui_bcMYWJlEDx8wtbxL8EApEoj7C3Ig3mJkkxWxx4s',
+  },
+  // Staging configuration (you'll need to replace these with your staging project details)
+  staging: {
+    url: import.meta.env.VITE_STAGING_SUPABASE_URL || 'https://your-staging-project.supabase.co',
+    key: import.meta.env.VITE_STAGING_SUPABASE_KEY || 'your-staging-project-key',
+  }
+};
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+// Determine which environment to use (defaults to production)
+const currentEnvironment = import.meta.env.VITE_APP_ENV || 'production';
+
+// Get the configuration for the current environment
+const config = configurations[currentEnvironment] || configurations.production;
+
+// Create and export the Supabase client
+export const supabase = createClient<Database>(config.url, config.key);
+
+// Helper function to check which environment we're using (for debugging)
+export const getCurrentEnvironment = () => currentEnvironment;

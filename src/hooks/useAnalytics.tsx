@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { MonthlyStats, SearchedUrlStats } from '@/types/analytics';
+import { MonthlyStats, SearchedUrlStats, QrCodeStats } from '@/types/analytics';
 import { toast } from 'sonner';
 
 export const useAnalytics = () => {
@@ -13,6 +13,7 @@ export const useAnalytics = () => {
   const [totalClicks, setTotalClicks] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState<MonthlyStats[]>([]);
   const [searchedUrlStats, setSearchedUrlStats] = useState<SearchedUrlStats | null>(null);
+  const [qrCodeStats, setQrCodeStats] = useState<QrCodeStats | null>(null);
 
   const fetchAggregateStats = async () => {
     setStatsLoading(true);
@@ -22,12 +23,29 @@ export const useAnalytics = () => {
         body: { action: 'overview' }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
+      
+      if (data.error) {
+        console.error("API returned error:", data.error);
+        throw new Error(data.error);
+      }
       
       // Set state with the data returned from the edge function
       setTotalUrls(data.totalUrls);
       setTotalClicks(data.totalClicks);
-      setMonthlyStats(data.monthlyStats);
+      
+      // Transform the monthly stats data to match our interface if needed
+      const mappedMonthlyStats = data.monthlyStats?.map((stat: any) => ({
+        month: stat.month,
+        total_urls: stat.total_urls,
+        total_clicks: stat.total_clicks
+      })) || [];
+      
+      setMonthlyStats(mappedMonthlyStats);
+      setQrCodeStats(data.qrCodeStats || null);
       
     } catch (error) {
       console.error("Error fetching aggregate stats:", error);
@@ -74,9 +92,13 @@ export const useAnalytics = () => {
         body: { action: 'url', shortCode }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw error;
+      }
       
       if (data.error) {
+        console.error("API returned error:", data.error);
         throw new Error(data.error);
       }
       
@@ -85,7 +107,7 @@ export const useAnalytics = () => {
     } catch (error) {
       console.error("Error fetching URL stats:", error);
       setSearchedUrlStats(null);
-      toast.error("URL not found");
+      toast.error("URL not found or error fetching stats");
     } finally {
       setStatsLoading(false);
     }
@@ -126,6 +148,7 @@ export const useAnalytics = () => {
     totalClicks,
     monthlyStats,
     searchedUrlStats,
+    qrCodeStats,
     handleSearch,
     resetSearch
   };
